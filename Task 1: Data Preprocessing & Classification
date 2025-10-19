@@ -1,0 +1,122 @@
+# Titanic Survival Prediction Project
+# Author: Sachin Rokde
+# Objective: Learn basic ML workflow – data cleaning, preprocessing, EDA, and classification.
+
+# -------------------------------
+# 1. Import Libraries
+# -------------------------------
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+# -------------------------------
+# 2. Load Dataset
+# -------------------------------
+# link: https://www.kaggle.com/competitions/titanic
+df = pd.read_csv("train.csv")
+
+# Display first 5 rows
+print("Dataset Preview:")
+print(df.head())
+
+# -------------------------------
+# 3. Basic Info & Missing Values
+# -------------------------------
+print("\nDataset Information:")
+print(df.info())
+
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+# -------------------------------
+# 4. Data Cleaning
+# -------------------------------
+# Fill missing Age with median
+df['Age'].fillna(df['Age'].median(), inplace=True)
+
+# Fill missing Embarked with mode (most frequent value)
+df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
+
+# Drop Cabin (too many missing values)
+df.drop(columns=['Cabin'], inplace=True)
+
+# Drop PassengerId, Name, and Ticket (not useful for prediction)
+df.drop(columns=['PassengerId', 'Name', 'Ticket'], inplace=True)
+
+# -------------------------------
+# 5. Exploratory Data Analysis (EDA)
+# -------------------------------
+print("\nSurvival Count:")
+print(df['Survived'].value_counts())
+
+# Plot survival by gender
+plt.figure(figsize=(6,4))
+sns.countplot(x='Sex', hue='Survived', data=df)
+plt.title("Survival Count by Gender")
+plt.show()
+
+# Plot survival by Passenger Class
+plt.figure(figsize=(6,4))
+sns.countplot(x='Pclass', hue='Survived', data=df)
+plt.title("Survival Count by Class")
+plt.show()
+
+# -------------------------------
+# 6. Encoding Categorical Data
+# -------------------------------
+le = LabelEncoder()
+df['Sex'] = le.fit_transform(df['Sex'])
+df['Embarked'] = le.fit_transform(df['Embarked'])
+
+# -------------------------------
+# 7. Feature Selection
+# -------------------------------
+X = df.drop('Survived', axis=1)
+y = df['Survived']
+
+# -------------------------------
+# 8. Train-Test Split
+# -------------------------------
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# -------------------------------
+# 9. Logistic Regression Model
+# -------------------------------
+log_model = LogisticRegression(max_iter=1000)
+log_model.fit(X_train, y_train)
+y_pred_log = log_model.predict(X_test)
+
+print("\n Logistic Regression Results:")
+print("Accuracy:", accuracy_score(y_test, y_pred_log))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred_log))
+print("Classification Report:\n", classification_report(y_test, y_pred_log))
+
+# -------------------------------
+# 10. Decision Tree Model
+# -------------------------------
+tree_model = DecisionTreeClassifier(random_state=42, max_depth=4)
+tree_model.fit(X_train, y_train)
+y_pred_tree = tree_model.predict(X_test)
+
+print("\n Decision Tree Results:")
+print("Accuracy:", accuracy_score(y_test, y_pred_tree))
+print("Confusion Matrix:\n", confusion_matrix(y_test, y_pred_tree))
+print("Classification Report:\n", classification_report(y_test, y_pred_tree))
+
+# -------------------------------
+# 11. Model Comparison
+# -------------------------------
+print("\n Model Comparison:")
+print(f"Logistic Regression Accuracy: {accuracy_score(y_test, y_pred_log):.2f}")
+print(f"Decision Tree Accuracy: {accuracy_score(y_test, y_pred_tree):.2f}")
+
+# -------------------------------
+# 12. Final Note
+# -------------------------------
+print("\nProject Completed Successfully")
