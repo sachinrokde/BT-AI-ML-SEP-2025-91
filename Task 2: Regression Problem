@@ -1,0 +1,143 @@
+# House Price Prediction Project
+# Author: Sachin Rokde
+# Objective: Apply regression techniques to predict house prices using numeric and categorical features.
+
+# -------------------------------
+# 1. Import Libraries
+# -------------------------------
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from xgboost import XGBRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+# -------------------------------
+# 2. Load Dataset
+# -------------------------------
+# link: https://www.kaggle.com/competitions/house-prices-advanced-regression-techniques
+df = pd.read_csv("train.csv")
+print("Dataset Loaded Successfully")
+print(df.head())
+
+# -------------------------------
+# 3. Basic Info & Missing Values
+# -------------------------------
+print("\nDataset Info:")
+print(df.info())
+
+print("\nMissing Values Count:")
+print(df.isnull().sum().sort_values(ascending=False).head(10))
+
+# -------------------------------
+# 4. Data Cleaning
+# -------------------------------
+# Drop columns with too many missing values
+df.drop(columns=['Alley','PoolQC','Fence','MiscFeature'], inplace=True)
+
+# Fill numeric missing values with median
+num_cols = df.select_dtypes(include=['int64','float64']).columns
+for col in num_cols:
+    df[col].fillna(df[col].median(), inplace=True)
+
+# Fill categorical missing values with mode
+cat_cols = df.select_dtypes(include=['object']).columns
+for col in cat_cols:
+    df[col].fillna(df[col].mode()[0], inplace=True)
+
+# -------------------------------
+# 5. Exploratory Data Analysis (EDA)
+# -------------------------------
+plt.figure(figsize=(6,4))
+sns.histplot(df['SalePrice'], bins=30, kde=True)
+plt.title("Distribution of House Prices")
+plt.show()
+
+plt.figure(figsize=(6,4))
+sns.boxplot(x='OverallQual', y='SalePrice', data=df)
+plt.title("House Price vs Overall Quality")
+plt.show()
+
+# -------------------------------
+# 6. Encoding Categorical Variables
+# -------------------------------
+# Label Encode all object columns
+le = LabelEncoder()
+for col in cat_cols:
+    df[col] = le.fit_transform(df[col])
+
+# -------------------------------
+# 7. Feature & Target Split
+# -------------------------------
+X = df.drop(columns=['SalePrice','Id'])
+y = df['SalePrice']
+
+# -------------------------------
+# 8. Train-Test Split
+# -------------------------------
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# -------------------------------
+# 9. Model 1 – Linear Regression
+# -------------------------------
+lin_reg = LinearRegression()
+lin_reg.fit(X_train, y_train)
+y_pred_lin = lin_reg.predict(X_test)
+
+print("\n Linear Regression Results:")
+print("R2 Score:", r2_score(y_test, y_pred_lin))
+print("MAE:", mean_absolute_error(y_test, y_pred_lin))
+print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_lin)))
+
+# -------------------------------
+# 10. Model 2 – Random Forest Regressor
+# -------------------------------
+rf_reg = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_reg.fit(X_train, y_train)
+y_pred_rf = rf_reg.predict(X_test)
+
+print("\n Random Forest Results:")
+print("R2 Score:", r2_score(y_test, y_pred_rf))
+print("MAE:", mean_absolute_error(y_test, y_pred_rf))
+print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_rf)))
+
+# -------------------------------
+# 11. Model 3 – XGBoost Regressor
+# -------------------------------
+xgb_reg = XGBRegressor(n_estimators=200, learning_rate=0.1, random_state=42)
+xgb_reg.fit(X_train, y_train)
+y_pred_xgb = xgb_reg.predict(X_test)
+
+print("\n XGBoost Results:")
+print("R2 Score:", r2_score(y_test, y_pred_xgb))
+print("MAE:", mean_absolute_error(y_test, y_pred_xgb))
+print("RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_xgb)))
+
+# -------------------------------
+# 12. Cross-Validation (R2 Score)
+# -------------------------------
+models = {'Linear Regression': lin_reg, 'Random Forest': rf_reg, 'XGBoost': xgb_reg}
+
+print("\n Cross-Validation (5-fold):")
+for name, model in models.items():
+    scores = cross_val_score(model, X, y, cv=5, scoring='r2')
+    print(f"{name}: Mean R2 = {scores.mean():.3f} (+/- {scores.std():.3f})")
+
+# -------------------------------
+# 13. Final Model Comparison
+# -------------------------------
+results = pd.DataFrame({
+    'Model': ['Linear Regression', 'Random Forest', 'XGBoost'],
+    'R2 Score': [r2_score(y_test, y_pred_lin),
+                 r2_score(y_test, y_pred_rf),
+                 r2_score(y_test, y_pred_xgb)]
+})
+print("\n Model Comparison:")
+print(results.sort_values(by='R2 Score', ascending=False))
+
+print("\nProject Completed Successfully ")
